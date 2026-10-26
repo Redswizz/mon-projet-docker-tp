@@ -2,62 +2,75 @@ services:
   db:
     image: postgres:18-alpine
     environment:
-      POSTGRES_PASSWORD: password
       POSTGRES_DB: evaluation
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
     volumes:
       - db_data:/var/lib/postgresql
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks: 
+    networks:
       - back_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d evaluation"]
       interval: 5s
       timeout: 3s
-      retries: 10    
-    
+      retries: 10
+
   backend:
-    build: 
+    build:
       context: ./backend
-      target: development 
+      target: development
     environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/evaluation
+      DB_HOST: db
+      DB_NAME: evaluation
+      DB_USER: postgres
+      DB_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
     ports:
       - "3001:3001"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - front_net
       - back_net
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q --spider http://127.0.0.1:3001/api/health" ]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3001/api/health"]
       interval: 10s
       timeout: 3s
       retries: 5
       start_period: 10s
 
   frontend:
-    build: 
+    build:
       context: ./frontend
-      target: development 
+      target: development
     environment:
       API_PROXY_TARGET: http://backend:3001
     ports:
       - "5173:5173"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - front_net
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q --spider http://127.0.0.1:5173/" ]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5173/"]
       interval: 10s
       timeout: 3s
       retries: 5
       start_period: 10s
-      
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+
 networks:
   front_net:
   back_net:
     internal: true
-    
+
 volumes:
   db_data:

@@ -1,18 +1,29 @@
+import fs from 'node:fs';
 import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
 
 const port = process.env.PORT || 3001;
 
-if (!process.env.DATABASE_URL) {
-  console.error('ERROR: DATABASE_URL is not defined');
-  console.error('Please create a .env file with DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DBNAME');
+// Mode 1 : DB_PASSWORD_FILE (secret Docker). Mode 2 : DATABASE_URL (dev hors Docker).
+function buildPoolConfig() {
+  if (process.env.DB_PASSWORD_FILE) {
+    return {
+      host: process.env.DB_HOST || 'localhost',
+      port: Number(process.env.DB_PORT) || 5432,
+      database: process.env.DB_NAME || 'evaluation',
+      user: process.env.DB_USER || 'postgres',
+      password: fs.readFileSync(process.env.DB_PASSWORD_FILE, 'utf8').trim(),
+    };
+  }
+  if (process.env.DATABASE_URL) {
+    return { connectionString: process.env.DATABASE_URL };
+  }
+  console.error('ERROR: define DB_PASSWORD_FILE (+ DB_HOST, DB_NAME, DB_USER) or DATABASE_URL');
   process.exit(1);
 }
 
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+const pool = new pg.Pool(buildPoolConfig());
 
 const app = express();
 

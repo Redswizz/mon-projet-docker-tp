@@ -102,12 +102,12 @@ Le mot de passe n'est **jamais** dans le code ni dans Git : il est lu depuis un 
 cp secrets/db_password.txt.example secrets/db_password.txt
 ```
 
-Éditez ensuite `secrets/db_password.txt` et remplacez `changeme` par le mot de passe de votre choix (une seule ligne, encodage ASCII / UTF-8 **sans BOM**).
+Éditez ensuite `secrets/db_password.txt` et remplacez `changeme` par le mot de passe : __(evaluation)__ (une seule ligne, encodage ASCII / UTF-8 **sans BOM**).
 
 Sous PowerShell, vous pouvez aussi le créer directement :
 
 ```powershell
-Set-Content -Path secrets/db_password.txt -Value "VotreMotDePasse" -NoNewline -Encoding ascii
+Set-Content -Path secrets/db_password.txt -Value "evaluation" -NoNewline -Encoding ascii
 ```
 
 ### 3. (Optionnel) Créer le fichier `.env`
